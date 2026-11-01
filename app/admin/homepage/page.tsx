@@ -35,7 +35,10 @@ const NEW_SECTION: Record<SectionType, Pick<HomeSection, 'title' | 'settings'>> 
 
 function describe(s: HomeSection): string {
   const parts: string[] = [];
-  if (s.type === 'hero' || s.type === 'strip' || s.type === 'image-grid') parts.push(`${s.tiles.length} tile${s.tiles.length === 1 ? '' : 's'}`);
+  if (s.type === 'hero' || s.type === 'strip' || s.type === 'image-grid') {
+    const hidden = s.tiles.filter((t) => t.hidden).length;
+    parts.push(`${s.tiles.length} tile${s.tiles.length === 1 ? '' : 's'}${hidden ? ` (${hidden} hidden)` : ''}`);
+  }
   if (s.settings.ratio) parts.push(`${s.settings.ratio.w}:${s.settings.ratio.h}`);
   if (s.type === 'image-grid' && s.settings.cols) parts.push(`${s.settings.cols.mobile}/${s.settings.cols.tablet}/${s.settings.cols.desktop} cols`);
   if (s.type === 'product-rail') parts.push(`${s.settings.source ?? 'trending'} · ${s.settings.limit ?? 12} products`);

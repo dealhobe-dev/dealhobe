@@ -145,6 +145,7 @@
   background: var(--adm-surface-2, #fcfaf8);
   border: 1px solid var(--adm-border, rgba(59, 13, 46, 0.09));
 }
+.hb-tile.is-off .hb-tile-media { opacity: 0.45; }
 .hb-tile-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--adm-s3, 0.75rem); align-items: start; }
 .hb-tile-media > div { display: flex; flex-direction: column; gap: 6px; }
 .hb-tile-fields { display: flex; flex-direction: column; gap: var(--adm-s2, 0.5rem); min-width: 0; }

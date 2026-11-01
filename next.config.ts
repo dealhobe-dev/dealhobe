@@ -21,7 +21,8 @@ const nextConfig: NextConfig = {
       { source: "/banners/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },
       { source: "/icons/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=2592000" }] },
       // Account, bag and admin pages and every API response are per-user: never let a shared cache keep them.
-      { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "no-store" }] },
+      { source: "/api/auth/:path*", headers: [{ key: "Cache-Control", value: "no-store" }] },
       { source: "/api/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
     ];
   },

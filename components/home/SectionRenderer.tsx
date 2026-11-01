@@ -24,7 +24,8 @@ const gridSizes = (c = { mobile: 2, tablet: 3, desktop: 4 }) =>
   `(min-width: 1320px) ${Math.ceil(1320 / c.desktop)}px, (min-width: 1024px) ${Math.ceil(100 / c.desktop)}vw, (min-width: 768px) ${Math.ceil(100 / c.tablet)}vw, ${Math.ceil(100 / c.mobile)}vw`;
 
 export default function SectionRenderer({ section, data, first }: { section: HomeSection; data: SectionData; first: boolean }) {
-  const { settings: st, tiles } = section;
+  const { settings: st } = section;
+  const tiles = section.tiles.filter((t) => !t.hidden);
 
   switch (section.type) {
     case "hero":

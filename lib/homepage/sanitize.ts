@@ -33,6 +33,7 @@ export function sanitizeTile(t: unknown): Tile | null {
     link: str(o.link, 1000),
     alt: str(o.alt, 200),
     badge: str(o.badge, 30),
+    hidden: o.hidden === true,
   };
 }
 

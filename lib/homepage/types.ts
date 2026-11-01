@@ -25,6 +25,7 @@ export type Tile = {
   link: string;
   alt: string;
   badge?: string;         // small corner label, e.g. "-30%"
+  hidden?: boolean;       // kept in the builder but not shown on the storefront
 };
 
 export type ProductSource = 'trending' | 'new' | 'featured' | 'top' | 'offer' | 'picks';

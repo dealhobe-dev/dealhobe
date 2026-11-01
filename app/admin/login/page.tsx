@@ -26,7 +26,16 @@ export default function AdminLoginPage() {
     setLoading(false);
 
     if (result?.error) {
-      setError('Invalid email or password. Please try again.');
+      const locked = /^RATE_LIMITED:(\d+)/.exec(result.error);
+      if (locked) {
+        const mins = Math.max(1, Math.ceil(Number(locked[1]) / 60));
+        setError(`Too many failed attempts. Try again in ${mins} minute${mins === 1 ? '' : 's'}.`);
+      } else if (result.error === 'UNAVAILABLE') {
+        setError('Sign-in is temporarily unavailable. Please try again shortly.');
+      } else {
+        setError('Invalid email or password. Please try again.');
+      }
+      setPassword('');
     } else {
       router.replace('/admin');
     }
@@ -42,7 +51,7 @@ export default function AdminLoginPage() {
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
-          {error && <div className="login-error">{error}</div>}
+          {error && <div className="login-error" role="alert">{error}</div>}
 
           <div className="login-input-wrap">
             <label className="login-input-label">Email Address</label>
@@ -54,7 +63,10 @@ export default function AdminLoginPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
+              maxLength={254}
               autoComplete="email"
+              autoCapitalize="none"
+              spellCheck={false}
             />
           </div>
 
@@ -68,6 +80,7 @@ export default function AdminLoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
+              maxLength={256}
               autoComplete="current-password"
             />
           </div>

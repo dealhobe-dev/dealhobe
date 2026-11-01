@@ -26,6 +26,7 @@ const TileSchema = new Schema<Tile>(
     link:                { type: String, default: '' },
     alt:                 { type: String, default: '' },
     badge:               { type: String, default: '' },
+    hidden:              { type: Boolean, default: false },
   },
 );
 

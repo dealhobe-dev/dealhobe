@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FiX, FiArrowUp, FiArrowDown, FiTrash2, FiAlertTriangle, FiImage } from 'react-icons/fi';
+import { FiX, FiArrowUp, FiArrowDown, FiTrash2, FiAlertTriangle, FiImage, FiEye, FiEyeOff } from 'react-icons/fi';
 import MediaUpload from '@/components/admin/MediaUpload';
 import { RATIO_PRESETS } from '@/lib/homepage/defaults';
 import { SECTION_LABELS, isVideo, ratioCss, type HomeSection, type Ratio, type SectionSettings, type Tile } from '@/lib/homepage/types';
@@ -87,7 +87,7 @@ function TileRow({ tile, index, count, settings, withMobile, links, onChange, on
 }) {
   const set = onChange;
   return (
-    <div className="hb-tile">
+    <div className={`hb-tile${tile.hidden ? ' is-off' : ''}`}>
       <div className="hb-tile-media">
         <div>
           <TilePreview src={tile.image} ratio={settings.ratio} label={withMobile ? 'Desktop' : 'Image'} />
@@ -124,7 +124,12 @@ function TileRow({ tile, index, count, settings, withMobile, links, onChange, on
           <datalist id="hb-links">{links.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}</datalist>
         )}
         <div className="hb-tile-actions">
-          <span className="hb-muted">Tile {index + 1} of {count}</span>
+          <span className="hb-muted">Tile {index + 1} of {count}{tile.hidden ? ' · Hidden on the storefront' : ''}</span>
+          <button type="button" className="hb-icon-btn" onClick={() => set({ hidden: !tile.hidden })} aria-pressed={!!tile.hidden}
+            aria-label={tile.hidden ? 'Show tile on the storefront' : 'Hide tile from the storefront'}
+            title={tile.hidden ? 'Hidden — click to show' : 'Visible — click to hide'}>
+            {tile.hidden ? <FiEyeOff size={15} /> : <FiEye size={15} />}
+          </button>
           <button type="button" className="hb-icon-btn" onClick={() => onMove(-1)} disabled={index === 0} aria-label="Move tile up"><FiArrowUp size={15} /></button>
           <button type="button" className="hb-icon-btn" onClick={() => onMove(1)} disabled={index === count - 1} aria-label="Move tile down"><FiArrowDown size={15} /></button>
           <button type="button" className="hb-icon-btn hb-danger" onClick={onRemove} aria-label="Remove tile"><FiTrash2 size={15} /></button>
