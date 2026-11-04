@@ -9,7 +9,7 @@ export interface IVariant {
   key: string; // option values joined by '|', e.g. "Red|M"
   options: { name: string; value: string }[];
   price: number;
-  salePrice?: number;
+  salePrice?: number; // never stored: set at read time by an active Offer (lib/offers.ts)
   costPrice?: number; // admin-only; never selected by default
   sku?: string;
   quantity: number;
@@ -26,7 +26,7 @@ export interface IProduct extends Document {
   name: string;
   slug: string;
   price: number;
-  salePrice?: number;
+  salePrice?: number; // never stored: set at read time by an active Offer (lib/offers.ts)
   costPrice?: number; // admin-only; never selected by default
   quantity: number;
   shortDescription: string;
@@ -54,7 +54,6 @@ const VariantSchema = new Schema(
     key: { type: String, required: true },
     options: [{ name: String, value: String, _id: false }],
     price: { type: Number, required: true, min: 0 },
-    salePrice: { type: Number, min: 0 },
     costPrice: { type: Number, min: 0, select: false }, // admin-only, like product.costPrice
     sku: { type: String },
     quantity: { type: Number, default: 0, min: 0 },
@@ -73,8 +72,8 @@ const ProductSchema = new Schema<IProduct>(
     sku: { type: String, unique: true, sparse: true },
     name: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
+    // No salePrice: discounts come only from Offers. Leaving it out of the schema also drops it from saves.
     price: { type: Number, required: true },
-    salePrice: { type: Number },
     // Admin-only purchase cost. select:false keeps it out of every query (storefront,
     // search, orders) unless a route explicitly asks for it with .select('+costPrice').
     costPrice: { type: Number, min: 0, select: false },

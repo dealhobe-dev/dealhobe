@@ -23,6 +23,8 @@ interface Offer {
   endingDate?: string | null;
 }
 
+const PRODUCTS_PER_PAGE = 10;
+
 const emptyForm = {
     title: '', slug: '', discountType: 'percentage', discountAmount: 0, details: '',
     thumbnailUrl: '', thumbnailPublicId: '', productSelection: 'all', selectedProducts: [], isActive: true,
@@ -39,15 +41,22 @@ export default function OffersPage() {
   const [saving, setSaving] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [brands, setBrands] = useState<{ _id: string; name: string }[]>([]);
+  const [brandFilter, setBrandFilter] = useState(''); // '' = all brands, else brand _id
+  const [productPage, setProductPage] = useState(1);
+  // The form is two steps: 1 = offer details, 2 = product selection.
+  const [step, setStep] = useState<1 | 2>(1);
 
   const load = async () => {
     setLoading(true);
-    const [oRes, pRes] = await Promise.all([
+    const [oRes, pRes, bRes] = await Promise.all([
         fetch('/api/admin/offers'),
-        fetch('/api/admin/products')
+        fetch('/api/admin/products'),
+        fetch('/api/admin/brands')
     ]);
     setOffers(await oRes.json());
     setProducts(await pRes.json());
+    setBrands(bRes.ok ? await bRes.json() : []);
     setLoading(false);
   };
 
@@ -57,6 +66,9 @@ export default function OffersPage() {
       setEditing(null);
       setForm({ ...emptyForm });
       setSearchQuery('');
+      setBrandFilter('');
+      setProductPage(1);
+      setStep(1);
       setModal(true);
   };
 
@@ -64,14 +76,22 @@ export default function OffersPage() {
     setEditing(o);
     setForm({ ...o, endingDate: o.endingDate ? o.endingDate.slice(0, 10) : '' });
     setSearchQuery('');
+    setBrandFilter('');
+    setProductPage(1);
+    setStep(1);
     setModal(true);
   };
 
-  const handleSave = async () => {
+  const detailsValid = () => {
     if (!form.title || !form.slug || form.discountAmount <= 0 || !form.thumbnailUrl) {
       toast.error('Please fill all required fields including thumbnail and discount amount.');
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!detailsValid()) { setStep(1); return; }
     if (form.productSelection === 'selected' && form.selectedProducts.length === 0) {
       toast.error('Please select at least one product.');
       return;
@@ -127,7 +147,35 @@ export default function OffersPage() {
       });
   };
 
-  const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  // `brand` holds a Brand id, or (older products) the brand name itself.
+  const selectedBrand = brands.find(b => b._id === brandFilter);
+  const brandProducts = selectedBrand
+    ? products.filter(p => p.brand === selectedBrand._id || p.brand === selectedBrand.name)
+    : products;
+  const filteredProducts = brandProducts.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const allBrandSelected = brandProducts.length > 0 && brandProducts.every(p => form.selectedProducts.includes(p._id));
+  const totalProductPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
+  const currentProductPage = Math.min(productPage, totalProductPages);
+  const productPageStart = (currentProductPage - 1) * PRODUCTS_PER_PAGE;
+  const pagedProducts = filteredProducts.slice(productPageStart, productPageStart + PRODUCTS_PER_PAGE);
+
+  // 1 … 4 5 [6] 7 8 … 20
+  const pageButtons: (number | 'gap-left' | 'gap-right')[] = [];
+  for (let n = 1; n <= totalProductPages; n++) {
+    if (n === 1 || n === totalProductPages || Math.abs(n - currentProductPage) <= 2) pageButtons.push(n);
+    else if (n < currentProductPage && pageButtons[pageButtons.length - 1] !== 'gap-left') pageButtons.push('gap-left');
+    else if (n > currentProductPage && pageButtons[pageButtons.length - 1] !== 'gap-right') pageButtons.push('gap-right');
+  }
+
+  /** Add every product of the chosen brand to the offer, or take them all out again. */
+  const toggleBrandProducts = () => {
+      const ids = brandProducts.map(p => p._id);
+      setForm((f: any) => {
+          const sel = new Set<string>(f.selectedProducts);
+          ids.forEach(id => (allBrandSelected ? sel.delete(id) : sel.add(id)));
+          return { ...f, selectedProducts: Array.from(sel) };
+      });
+  };
 
   return (
     <div>
@@ -189,11 +237,15 @@ export default function OffersPage() {
             <div className="modal-header">
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
                 {editing ? <FiEdit2 size={16} /> : <FiPlus size={16} />} {editing ? 'Edit Offer' : 'Create New Offer'}
+                <span className="admin-hint" style={{ fontWeight: 400 }}>
+                  · Step {step} of 2: {step === 1 ? 'Offer details' : 'Product selection'}
+                </span>
               </span>
               <button className="modal-close" aria-label="Close" onClick={() => setModal(false)}><FiX size={18} /></button>
             </div>
             <div className="modal-body">
               <div className="admin-form">
+                {step === 1 && (<>
                 <div className="admin-form-row">
                     <div className="admin-field">
                         <label className="admin-label">Offer Title</label>
@@ -239,6 +291,15 @@ export default function OffersPage() {
                    onChange={(url, pid) => setForm((f:any) => ({...f, thumbnailUrl: url, thumbnailPublicId: pid}))}
                  />
 
+                <div className="admin-field">
+                    <label className="admin-checkbox-row">
+                      <input type="checkbox" className="admin-checkbox" checked={form.isActive} onChange={e => setForm((f:any) => ({ ...f, isActive: e.target.checked }))} />
+                      <span className="admin-label">Active</span>
+                    </label>
+                </div>
+                </>)}
+
+                {step === 2 && (<>
                  <div className="admin-field">
                     <label className="admin-label">Product Selection</label>
                     <div className="admin-radio-group">
@@ -254,9 +315,22 @@ export default function OffersPage() {
                 {form.productSelection === 'selected' && (
                     <div className="admin-field admin-subpanel">
                          <label className="admin-label">Select Products</label>
-                         <input className="admin-input" type="search" style={{marginBottom: '0.5rem'}} placeholder="Search products..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                         <div className="admin-input-group" style={{marginBottom: '0.5rem'}}>
+                             <input className="admin-input" type="search" placeholder="Search products..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setProductPage(1); }} />
+                             <select className="admin-select" style={{width: 'auto'}} value={brandFilter} onChange={e => { setBrandFilter(e.target.value); setProductPage(1); }} aria-label="Filter by brand">
+                                 <option value="">All brands</option>
+                                 {brands.map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
+                             </select>
+                         </div>
+                         {selectedBrand && brandProducts.length > 0 && (
+                             <button type="button" className="btn-admin-secondary btn-sm" style={{marginBottom: '0.5rem'}} onClick={toggleBrandProducts}>
+                                 {allBrandSelected
+                                     ? `Remove all ${brandProducts.length} ${selectedBrand.name} products`
+                                     : `Add all ${brandProducts.length} ${selectedBrand.name} products to this offer`}
+                             </button>
+                         )}
                          <div className="check-list">
-                             {filteredProducts.map(p => (
+                             {pagedProducts.map(p => (
                                  <label key={p._id} className={`check-list-row ${form.selectedProducts.includes(p._id) ? 'is-checked' : ''}`}>
                                      <div>
                                          {getProductCoverImage(p) && (
@@ -264,28 +338,61 @@ export default function OffersPage() {
                                              <Image src={getProductCoverImage(p) as string} alt="" fill sizes="34px" style={{objectFit:'cover'}}/>
                                            </span>
                                          )}
-                                         <span>{p.name} - {p.hasVariants ? 'from ' : ''}৳{withLowestVariantPrice(p).salePrice || withLowestVariantPrice(p).price}</span>
+                                         <span>{p.name} - {p.hasVariants ? 'from ' : ''}৳{withLowestVariantPrice(p).price}</span>
                                      </div>
                                      <input type="checkbox" className="admin-checkbox" checked={form.selectedProducts.includes(p._id)} onChange={() => toggleProduct(p._id)} />
                                  </label>
                              ))}
                              {filteredProducts.length === 0 && <div className="picker-state">No products found</div>}
                          </div>
+                         {totalProductPages > 1 && (
+                           <nav className="admin-pagination" style={{ marginTop: '0.75rem' }} aria-label="Product pages">
+                             <div className="admin-pagination-pages">
+                               <button type="button" className="btn-admin-secondary btn-sm" disabled={currentProductPage === 1} onClick={() => setProductPage(currentProductPage - 1)}>
+                                 ‹ Prev
+                               </button>
+                               {pageButtons.map((n, i) =>
+                                 typeof n === 'number' ? (
+                                   <button
+                                     key={n}
+                                     type="button"
+                                     className={`${n === currentProductPage ? 'btn-admin-primary' : 'btn-admin-secondary'} btn-sm`}
+                                     aria-current={n === currentProductPage ? 'page' : undefined}
+                                     onClick={() => setProductPage(n)}
+                                   >
+                                     {n}
+                                   </button>
+                                 ) : (
+                                   <span key={`${n}-${i}`} className="admin-pagination-gap">…</span>
+                                 )
+                               )}
+                               <button type="button" className="btn-admin-secondary btn-sm" disabled={currentProductPage === totalProductPages} onClick={() => setProductPage(currentProductPage + 1)}>
+                                 Next ›
+                               </button>
+                             </div>
+                             <span className="admin-pagination-meta">
+                               Showing {productPageStart + 1}–{Math.min(productPageStart + PRODUCTS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length}
+                             </span>
+                           </nav>
+                         )}
                          <div className="admin-hint" style={{marginTop:'0.5rem'}}>{form.selectedProducts.length} product(s) selected</div>
                     </div>
                 )}
-
-                <div className="admin-field">
-                    <label className="admin-checkbox-row">
-                      <input type="checkbox" className="admin-checkbox" checked={form.isActive} onChange={e => setForm((f:any) => ({ ...f, isActive: e.target.checked }))} />
-                      <span className="admin-label">Active</span>
-                    </label>
-                </div>
+                </>)}
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn-admin-secondary" onClick={() => setModal(false)}>Cancel</button>
-              <button className="btn-admin-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : editing ? 'Update Offer' : 'Create Offer'}</button>
+              {step === 1 ? (
+                <>
+                  <button className="btn-admin-secondary" onClick={() => setModal(false)}>Cancel</button>
+                  <button className="btn-admin-primary" onClick={() => { if (detailsValid()) setStep(2); }}>Next: Select Products ›</button>
+                </>
+              ) : (
+                <>
+                  <button className="btn-admin-secondary" onClick={() => setStep(1)} disabled={saving}>‹ Back</button>
+                  <button className="btn-admin-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : editing ? 'Update Offer' : 'Create Offer'}</button>
+                </>
+              )}
             </div>
           </div>
         </div>

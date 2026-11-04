@@ -33,8 +33,7 @@ cloudinary.config({
 });
 
 // Placeholder pricing/stock until real numbers are entered in the admin panel.
-const PRICE = 700;
-const SALE_PRICE = 635;
+const PRICE = 635;
 const COST_PRICE = 500;
 const STOCK = 100;
 const TAGS = ['isTrending', 'isNewArrival', 'isFeatured', 'isTopSeller'];
@@ -167,7 +166,6 @@ async function upload(sourceUrl) {
         key: v.name,
         options: [{ name: item.optionName, value: v.name }],
         price: PRICE,
-        salePrice: SALE_PRICE,
         costPrice: COST_PRICE,
         sku: `${sku}-${i + 1}`,
         quantity: STOCK,
@@ -186,7 +184,6 @@ async function upload(sourceUrl) {
       name: item.name,
       slug,
       price: PRICE,
-      salePrice: SALE_PRICE,
       costPrice: COST_PRICE,
       quantity: hasVariants ? STOCK * variants.length : STOCK,
       shortDescription: item.shortDescription,

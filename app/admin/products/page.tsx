@@ -18,7 +18,6 @@ interface Product {
   name: string;
   slug: string;
   price: number;
-  salePrice: number;
   costPrice?: number;
   quantity: number;
   shortDescription: string;
@@ -57,7 +56,7 @@ const generateSlug = (name: string) => {
 const PAGE_SIZE = 20;
 
 const emptyForm = {
-    sku: '', name: '', slug: '', price: 0, salePrice: 0, costPrice: 0, quantity: 0, shortDescription: '',
+    sku: '', name: '', slug: '', price: 0, costPrice: 0, quantity: 0, shortDescription: '',
     brand: '', category: '', subCategory: '', description: '',
     images: [] as string[], imagePublicIds: [] as string[],
     isFeatured: false, isTrending: false, isNewArrival: false, isTopSeller: false,
@@ -134,7 +133,6 @@ export default function ProductsPage() {
       ? {
           ...form,
           price: Math.min(...form.variants.map((v: Variant) => v.price)),
-          salePrice: 0,
           quantity: form.variants.reduce((n: number, v: Variant) => n + (v.quantity || 0), 0),
         }
       : { ...form, variantOptions: [], variants: [] };
@@ -292,7 +290,7 @@ export default function ProductsPage() {
                             </div>
                           </div>
                         </td>
-                        <td data-label="Price" className="nowrap"><span>{p.hasVariants && <span style={{fontSize:'0.75em', color:'var(--text-muted)'}}>From </span>}<strong style={{ fontWeight: 600 }}>৳{shown.salePrice || shown.price}</strong> {!!shown.salePrice && <span style={{textDecoration:'line-through', color:'var(--text-muted)', fontSize: '0.75em'}}>৳{shown.price}</span>}</span></td>
+                        <td data-label="Price" className="nowrap"><span>{p.hasVariants && <span style={{fontSize:'0.75em', color:'var(--text-muted)'}}>From </span>}<strong style={{ fontWeight: 600 }}>৳{shown.price}</strong></span></td>
                         <td data-label="Stock">
                           <div>
                             {p.quantity === 0 ? <span className="badge badge-red">Out of Stock</span> :
@@ -435,17 +433,9 @@ export default function ProductsPage() {
                         <input type="number" className="admin-input" value={form.price} onChange={e => setForm((f:any) => ({...f, price: +e.target.value}))} />
                     </div>
                     <div className="admin-field">
-                        <label className="admin-label">Sale Price (৳ - Optional){form.hasVariants ? ' - default for new variants' : ''}</label>
-                        <input type="number" className="admin-input" value={form.salePrice} onChange={e => setForm((f:any) => ({...f, salePrice: +e.target.value}))} />
-                    </div>
-                </div>
-
-                <div className="admin-form-row">
-                    <div className="admin-field">
                         <label className="admin-label">Cost Price (৳ - admin only, used for profit{form.hasVariants ? '; default cost for new variants' : ''})</label>
                         <input type="number" min={0} className="admin-input" value={form.costPrice ?? 0} onChange={e => setForm((f:any) => ({...f, costPrice: +e.target.value}))} />
                     </div>
-                    <div className="admin-field" />
                 </div>
 
                 <div className="admin-form-row">
@@ -532,7 +522,7 @@ export default function ProductsPage() {
                     <VariantsEditor
                         options={form.variantOptions}
                         variants={form.variants}
-                        defaults={{ price: form.price, salePrice: form.salePrice, costPrice: form.costPrice, sku: form.sku }}
+                        defaults={{ price: form.price, costPrice: form.costPrice, sku: form.sku }}
                         mainImage={form.images[0]}
                         onChange={(variantOptions, variants) => setForm((f:any) => ({ ...f, variantOptions, variants }))}
                     />

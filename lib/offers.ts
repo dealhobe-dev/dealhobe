@@ -67,8 +67,7 @@ function applyBestOffer<T extends { _id: any; price: number; salePrice?: number 
     ? {
         variants: variants.map((v: any) => {
           const offered = Math.round(discount(bestOffer, v.price));
-          const current = v.salePrice || v.price;
-          return offered < current ? { ...v, salePrice: offered } : v;
+          return offered < v.price ? { ...v, salePrice: offered } : v;
         }),
       }
     : {};

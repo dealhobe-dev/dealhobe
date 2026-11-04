@@ -1467,8 +1467,6 @@ tr.is-dragging td {
 
 /* Offer product checklist */
 .check-list {
-  max-height: 240px;
-  overflow-y: auto;
   border: 1px solid var(--adm-border-2);
   border-radius: var(--adm-radius-sm);
   background: var(--adm-surface);

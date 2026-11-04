@@ -12,7 +12,6 @@ export interface Variant {
   key: string;
   options: { name: string; value: string }[];
   price: number;
-  salePrice?: number;
   costPrice?: number;
   sku: string;
   quantity: number;
@@ -24,7 +23,6 @@ export interface Variant {
 /** Product-level values that every newly generated variant starts from. */
 export interface VariantDefaults {
   price: number;
-  salePrice?: number;
   costPrice?: number;
   sku?: string;
 }
@@ -97,7 +95,6 @@ export function buildVariants(options: VariantOption[], existing: Variant[], def
       key,
       options: opts,
       price: tpl ? tpl.price : defaults.price,
-      salePrice: tpl ? tpl.salePrice ?? 0 : defaults.salePrice ?? 0,
       costPrice: tpl ? tpl.costPrice ?? 0 : defaults.costPrice ?? 0,
       sku: skuFor('', i),
       quantity: DEFAULT_VARIANT_STOCK,
@@ -125,7 +122,7 @@ export default function VariantsEditor({ options, variants, defaults, mainImage,
     if (next.length === variants.length && next.some((v, i) => v.sku !== variants[i].sku)) onChange(options, next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaults.sku]);
-  const [bulk, setBulk] = useState({ price: '', salePrice: '', costPrice: '', quantity: '' });
+  const [bulk, setBulk] = useState({ price: '', costPrice: '', quantity: '' });
   const [editing, setEditing] = useState<{ i: number; value: string; text: string } | null>(null);
 
   /** Rename a value in place, carrying over each affected variant's price/SKU/stock/image. */
@@ -148,12 +145,11 @@ export default function VariantsEditor({ options, variants, defaults, mainImage,
     const num = (s: string) => (s.trim() === '' ? undefined : Math.max(0, +s));
     const patch: Partial<Variant> = {};
     if (num(bulk.price) !== undefined) patch.price = num(bulk.price)!;
-    if (num(bulk.salePrice) !== undefined) patch.salePrice = num(bulk.salePrice)!;
     if (num(bulk.costPrice) !== undefined) patch.costPrice = num(bulk.costPrice)!;
     if (num(bulk.quantity) !== undefined) patch.quantity = num(bulk.quantity)!;
     if (Object.keys(patch).length === 0) return;
     onChange(options, variants.map((v) => ({ ...v, ...patch })));
-    setBulk({ price: '', salePrice: '', costPrice: '', quantity: '' });
+    setBulk({ price: '', costPrice: '', quantity: '' });
   };
   const patchVariant = (key: string, patch: Partial<Variant>) =>
     onChange(options, variants.map(v => (v.key === key ? { ...v, ...patch } : v)));
@@ -280,7 +276,7 @@ export default function VariantsEditor({ options, variants, defaults, mainImage,
       {variants.length > 0 && (
         <div className="variants-bulk">
           <span className="admin-label" style={{ flexBasis: '100%' }}>Apply to all variants</span>
-          {([['price', 'Price'], ['salePrice', 'Sale'], ['costPrice', 'Cost'], ['quantity', 'Stock']] as const).map(([k, label]) => (
+          {([['price', 'Price'], ['costPrice', 'Cost'], ['quantity', 'Stock']] as const).map(([k, label]) => (
             <input key={k} type="number" min={0} className="admin-input" placeholder={label} aria-label={`${label} for all variants`}
               value={bulk[k]} onChange={e => setBulk(b => ({ ...b, [k]: e.target.value }))} />
           ))}
@@ -292,7 +288,7 @@ export default function VariantsEditor({ options, variants, defaults, mainImage,
         <div className="admin-table-wrap">
           <table className="admin-table admin-table--sticky variants-table">
             <thead>
-              <tr><th className="sticky-col">Variant</th><th>Price (৳)</th><th>Sale (৳)</th><th>Cost (৳)</th><th>SKU</th><th>Stock</th><th>Image</th></tr>
+              <tr><th className="sticky-col">Variant</th><th>Price (৳)</th><th>Cost (৳)</th><th>SKU</th><th>Stock</th><th>Image</th></tr>
             </thead>
             <tbody>
               {variants.map(v => {
@@ -302,8 +298,6 @@ export default function VariantsEditor({ options, variants, defaults, mainImage,
                     <td className="sticky-col" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{v.options.map(o => o.value).join(' / ')}</td>
                     <td><input type="number" min={0} className="admin-input" style={{ width: 90 }} value={v.price}
                       onChange={e => patchVariant(v.key, { price: +e.target.value })} /></td>
-                    <td><input type="number" min={0} className="admin-input" style={{ width: 90 }} value={v.salePrice ?? 0}
-                      onChange={e => patchVariant(v.key, { salePrice: +e.target.value })} /></td>
                     <td><input type="number" min={0} className="admin-input" style={{ width: 90 }} value={v.costPrice ?? 0}
                       onChange={e => patchVariant(v.key, { costPrice: +e.target.value })} /></td>
                     <td><input className="admin-input" style={{ width: 130, fontFamily: 'monospace' }} value={v.sku}

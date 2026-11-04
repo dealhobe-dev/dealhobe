@@ -4,13 +4,13 @@ import { seed, cleanup } from './data';
 test('Every catalog sort orders known products; price bands, ratings and stock filter results', async ({ page, audit, isMobile }) => {
   await adminLogin(page); const data = await seed(page); const products = [data.product]; const reviews: string[] = []; let orderNumber = '';
   try {
-    expect((await page.request.put('/api/admin/products', { data: { id: data.product._id, price: 100, salePrice: 90, isFeatured: false } })).ok()).toBeTruthy();
-    for (const [suffix, price, salePrice, year, featured, quantity] of [
-      ['B', 400, 200, 2020, true, 100], ['C', 800, 640, 2021, false, 100], ['D', 2500, 0, 2022, false, 0],
+    expect((await page.request.put('/api/admin/products', { data: { id: data.product._id, price: 90, isFeatured: false } })).ok()).toBeTruthy();
+    for (const [suffix, price, year, featured, quantity] of [
+      ['B', 200, 2020, true, 100], ['C', 640, 2021, false, 100], ['D', 2500, 2022, false, 0],
     ] as const) {
       const res = await page.request.post('/api/admin/products', { data: {
         name: `${data.name} ${suffix}`, slug: `${data.product.slug}-${suffix.toLowerCase()}`, sku: `${data.product.sku}-${suffix}`,
-        price, salePrice, quantity, createdAt: `${year}-01-01T00:00:00Z`, isFeatured: featured,
+        price, quantity, createdAt: `${year}-01-01T00:00:00Z`, isFeatured: featured,
         category: data.category._id, subCategory: data.sub._id, brand: data.brand._id,
         shortDescription: 'QA ordered product', description: '<p>QA sort data</p>', images: data.product.images,
       } }); expect(res.ok(), await res.text()).toBeTruthy(); products.push(await res.json());
@@ -26,7 +26,7 @@ test('Every catalog sort orders known products; price bands, ratings and stock f
     const names = products.map(p => p.name);
     for (const [sort, indexes] of [
       ['price-asc', [0, 1, 2, 3]], ['price-desc', [3, 2, 1, 0]], ['newest', [0, 3, 2, 1]],
-      ['discount', [1, 2, 0, 3]], ['best-selling', [2, 0, 1, 3]], ['top-rated', [2, 1, 0, 3]], ['featured', [1, 2, 0, 3]],
+      ['best-selling', [2, 0, 1, 3]], ['top-rated', [2, 1, 0, 3]], ['featured', [1, 2, 0, 3]],
     ] as const) {
       await page.locator('select:visible').selectOption(sort);
       await expect(page.locator('main article h3')).toHaveText(indexes.map(i => names[i])); await audit.check();
